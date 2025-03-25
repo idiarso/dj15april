@@ -3,22 +3,23 @@ import barcode
 from barcode.writer import ImageWriter
 import os
 import win32print  # For Windows printing
+import time
 
-# Open the serial connection to the Arduino
+# JAlur Serial dari arduino ke komputer
 arduino = serial.Serial('COM3', 9600, timeout=1)
 
 def generate_and_print_barcode(barcode_data):
     try:
-        # Generate a barcode image (Code 128 format)
+        # Generate barcode image (Code 128 format)
         barcode_format = barcode.get_barcode_class('code128')
         barcode_image = barcode_format(barcode_data, writer=ImageWriter())
 
-        # Save the barcode image to a temporary file
+        # Simpan  barcode image ke temporary file
         temp_file = "temp_barcode"
         barcode_image.save(temp_file)
         barcode_file = f"{temp_file}.png"
 
-        # Print the barcode using the default printer
+        # Print  barcode dengan default printer
         printer_name = win32print.GetDefaultPrinter()
         print(f"Printing to: {printer_name}")
 
@@ -45,7 +46,11 @@ def generate_and_print_barcode(barcode_data):
 def main():
     while True:
         try:
-            # Check for incoming data from the Arduino
+
+            if not arduino.is_open:
+            arduino.open()
+            
+            # cek data masuk dari arduino
             if arduino.in_waiting > 0:
                 barcode_data = arduino.readline().decode('utf-8').strip()
 
@@ -59,6 +64,7 @@ def main():
             break
         except Exception as e:
             print(f"Error: {e}")
+            time.sleep(5)
 
 if __name__ == "__main__":
     try:
