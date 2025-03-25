@@ -4,10 +4,13 @@ Add the Batch File to Startup
 There are multiple ways to add the batch file to the Windows startup process. Choose one of the following methods:
 
 Method 1: Use the Startup Folder
+
 1.Press Win + R, type shell:startup, and press Enter. This opens the Startup folder .
+
 2. Copy the batch file (app_autorun.bat) into this folder.
    -Alternatively, you can create a shortcut to the batch file and place the shortcut in the Startup folder.
-3. Restart your computer to test if the script runs automatically.
+   
+4. Restart your computer to test if the script runs automatically.
 
 Method 2: Use the Registry Editor
 1. Press Win + R, type regedit, and press Enter to open the Registry Editor .
