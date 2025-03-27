@@ -22,9 +22,12 @@ def generate_and_print_barcode(barcode_data):
         esc_pos_commands = (
             b"\x1B\x40" +          # Initialize printer
             b"\x1B\x61\x01" +      # Center alignment
+            b"\x1D\x21\x11" +      # Set font size (double height, double width)
+            b"BARCODE:\n" +        # Add text label for clarity
             b"\x1D\x6B\x49" +      # Barcode type: Code 128
             barcode_data.encode() + b"\x00" +  # Barcode data (null-terminated)
-            b"\x0A"                # Line feed (new line)
+            b"\x0A" +              # Line feed (new line)
+            b"\x1D\x56\x41\x00"    # Auto-cut command
         )
 
         # Send the ESC/POS commands to the printer
