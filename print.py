@@ -75,3 +75,76 @@ if __name__ == "__main__":
     finally:
         if arduino.is_open:
             arduino.close()
+
+
+----------------------------------------------------------||--------------------------------------------------------------------
+
+import random
+import win32print  # For Windows printing
+
+def generate_random_barcode():
+    # Generate a random 12-digit number for the barcode
+    return ''.join(random.choices('0123456789', k=12))
+
+def print_barcode(barcode_data):
+    try:
+        # Get the default printer
+        printer_name = win32print.GetDefaultPrinter()
+        print(f"Printing to: {printer_name}")
+
+        # Open the printer
+        printer_handle = win32print.OpenPrinter(printer_name)
+
+        # Start a print job
+        job_id = win32print.StartDocPrinter(printer_handle, 1, ("Barcode Print Job", None, "RAW"))
+        win32print.StartPagePrinter(printer_handle)
+
+        # ESC/POS commands for barcode printing
+        esc_pos_commands = (
+            b"\x1B\x40" +          # Initialize printer
+            b"\x1B\x61\x01" +      # Center alignment
+            b"Random Barcode\n" +  # Label for clarity
+            b"\x1D\x6B\x49" +      # Barcode type: Code 128
+            barcode_data.encode() + b"\x00" +  # Barcode data (null-terminated)
+            b"\x0A" +              # Line feed (new line)
+            b"\x1D\x56\x41\x00"    # Auto-cut command
+        )
+
+        # Send the ESC/POS commands to the printer
+        win32print.WritePrinter(printer_handle, esc_pos_commands)
+
+        # End the print job
+        win32print.EndPagePrinter(printer_handle)
+        win32print.EndDocPrinter(printer_handle)
+
+        print("Barcode printed successfully!")
+    except Exception as e:
+        print(f"Error printing barcode: {e}")
+    finally:
+        # Close the printer handle
+        if printer_handle:
+            try:
+                win32print.ClosePrinter(printer_handle)
+            except Exception as e:
+                print(f"Error closing printer handle: {e}")
+
+def main():
+    while True:
+        try:
+            # Generate a random barcode
+            barcode_data = generate_random_barcode()
+            print(f"Generated barcode: {barcode_data}")
+
+            # Print the barcode
+            print_barcode(barcode_data)
+
+            # Wait for a few seconds before generating the next barcode
+            time.sleep(5)  # Adjust this delay as needed
+        except KeyboardInterrupt:
+            print("Exiting...")
+            break
+        except Exception as e:
+            print(f"Error: {e}")
+
+if __name__ == "__main__":
+    main()
