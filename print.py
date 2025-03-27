@@ -79,12 +79,19 @@ if __name__ == "__main__":
 
 ----------------------------------------------------------||--------------------------------------------------------------------
 
-import random
+import serial
 import win32print  # For Windows printing
+import time
+import psycopg2  # For PostgreSQL database interaction
 
-def generate_random_barcode():
-    # Generate a random 12-digit number for the barcode
-    return ''.join(random.choices('0123456789', k=12))
+# Open the serial connection to the Arduino
+arduino = serial.Serial('COM3', 9600, timeout=1)
+
+# Database connection details
+DB_HOST = "localhost"
+DB_NAME = "your_database_name"  # Replace with your database name
+DB_USER = "postgres"           # Replace with your username
+DB_PASSWORD = "password"       # Replace with your password
 
 def print_barcode(barcode_data):
     try:
@@ -103,7 +110,7 @@ def print_barcode(barcode_data):
         esc_pos_commands = (
             b"\x1B\x40" +          # Initialize printer
             b"\x1B\x61\x01" +      # Center alignment
-            b"Random Barcode\n" +  # Label for clarity
+            f"Barcode: {barcode_data}\n".encode() +  # Label for clarity
             b"\x1D\x6B\x49" +      # Barcode type: Code 128
             barcode_data.encode() + b"\x00" +  # Barcode data (null-terminated)
             b"\x0A" +              # Line feed (new line)
@@ -128,23 +135,63 @@ def print_barcode(barcode_data):
             except Exception as e:
                 print(f"Error closing printer handle: {e}")
 
+def insert_into_database(barcode_data):
+    try:
+        # Connect to the PostgreSQL database
+        connection = psycopg2.connect(
+            host=DB_HOST,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+        cursor = connection.cursor()
+
+        # Insert the barcode data into the "vehicle" table
+        query = "INSERT INTO vehicle (vehicle_entry) VALUES (%s);"
+        cursor.execute(query, (barcode_data,))
+
+        # Commit the transaction
+        connection.commit()
+        print(f"Inserted '{barcode_data}' into the database.")
+
+    except Exception as e:
+        print(f"Error inserting into database: {e}")
+    finally:
+        # Close the database connection
+        if connection:
+            cursor.close()
+            connection.close()
+
 def main():
     while True:
         try:
-            # Generate a random barcode
-            barcode_data = generate_random_barcode()
-            print(f"Generated barcode: {barcode_data}")
+            # Reconnect to the Arduino if the connection is lost
+            if not arduino.is_open:
+                arduino.open()
 
-            # Print the barcode
-            print_barcode(barcode_data)
+            # Check for incoming data from the Arduino
+            if arduino.in_waiting > 0:
+                received_data = arduino.readline().decode('utf-8').strip()
 
-            # Wait for a few seconds before generating the next barcode
-            time.sleep(5)  # Adjust this delay as needed
+                if received_data:
+                    print(f"Received data from Arduino: {received_data}")
+
+                    # Step 1: Print the barcode
+                    print_barcode(received_data)
+
+                    # Step 2: Insert the data into the PostgreSQL database
+                    insert_into_database(received_data)
+
         except KeyboardInterrupt:
             print("Exiting...")
             break
         except Exception as e:
             print(f"Error: {e}")
+            time.sleep(5)  # Wait before retrying
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        if arduino.is_open:
+            arduino.close()
