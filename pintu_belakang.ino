@@ -60,29 +60,41 @@ void loop() {
 
 -------------------------------------------------------------||||----------------------------------------------------------------------------
 
-  void loop() {
-  if (Serial.available() > 0) {
-    String command = Serial.readStringUntil('\n');
-    command.trim();
-    Serial.print("Received command: ");
-    Serial.println(command);
+  // Pin Definitions
+const int relayPin = D3; // Pin for the relay control (GPIO0)
 
+void setup() {
+  // Initialize Serial communication at 115200 baud rate
+  Serial.begin(115200);
+
+  // Configure pin modes
+  pinMode(relayPin, OUTPUT);
+
+  // Ensure the relay is initially off
+  digitalWrite(relayPin, LOW);
+
+  // Print a startup message
+  Serial.println("Relay Control Ready. Send 'ON' to activate or 'OFF' to deactivate.");
+}
+
+void loop() {
+  // Check if data is available on the serial port
+  if (Serial.available() > 0) {
+    // Read the incoming command
+    String command = Serial.readStringUntil('\n');
+    command.trim(); // Remove any extra whitespace or newline characters
+
+    // Process the command
     if (command == "ON") {
-      unsigned long currentTime = millis();
-      if ((currentTime - lastTriggerTime) >= cooldownPeriod) {
-        Serial.println("Activating relay...");
-        digitalWrite(relayPin, HIGH);
-        delay(1000);
-        digitalWrite(relayPin, LOW);
-        lastTriggerTime = currentTime;
-        Serial.println("Relay deactivated.");
-      } else {
-        Serial.println("Cooldown active. Please wait.");
-      }
+      // Turn on the relay
+      digitalWrite(relayPin, HIGH);
+      Serial.println("Relay ON");
     } else if (command == "OFF") {
+      // Turn off the relay
       digitalWrite(relayPin, LOW);
-      Serial.println("Relay turned OFF.");
+      Serial.println("Relay OFF");
     } else {
+      // Invalid command received
       Serial.println("Invalid command. Use 'ON' or 'OFF'.");
     }
   }
