@@ -57,3 +57,33 @@ void loop() {
     }
   }
 }
+
+-------------------------------------------------------------||||----------------------------------------------------------------------------
+
+  void loop() {
+  if (Serial.available() > 0) {
+    String command = Serial.readStringUntil('\n');
+    command.trim();
+    Serial.print("Received command: ");
+    Serial.println(command);
+
+    if (command == "ON") {
+      unsigned long currentTime = millis();
+      if ((currentTime - lastTriggerTime) >= cooldownPeriod) {
+        Serial.println("Activating relay...");
+        digitalWrite(relayPin, HIGH);
+        delay(1000);
+        digitalWrite(relayPin, LOW);
+        lastTriggerTime = currentTime;
+        Serial.println("Relay deactivated.");
+      } else {
+        Serial.println("Cooldown active. Please wait.");
+      }
+    } else if (command == "OFF") {
+      digitalWrite(relayPin, LOW);
+      Serial.println("Relay turned OFF.");
+    } else {
+      Serial.println("Invalid command. Use 'ON' or 'OFF'.");
+    }
+  }
+}
